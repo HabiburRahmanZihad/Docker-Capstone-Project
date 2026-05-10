@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 export default function VolumesPage() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState({});
+  const [busy, setBusy] = useState({});
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({ name: "", driver: "local" });
   const [error, setError] = useState(null);
@@ -40,14 +40,14 @@ export default function VolumesPage() {
   useEffect(() => { fetchVolumes(); }, [fetchVolumes]);
 
   async function handleRemove(name) {
-    setActionLoading((p) => ({ ...p, [name]: true }));
+    setBusy((p) => ({ ...p, [name]: true }));
     try {
       await volumes.remove(name);
       await fetchVolumes();
     } catch (e) {
       alert(e?.response?.data?.error || e.message);
     } finally {
-      setActionLoading((p) => ({ ...p, [name]: false }));
+      setBusy((p) => ({ ...p, [name]: false }));
     }
   }
 
@@ -64,7 +64,7 @@ export default function VolumesPage() {
   }
 
   async function handlePrune() {
-    if (!confirm("Remove all unused volumes?")) return;
+    if (!confirm("Remove all unused volumes? This cannot be undone.")) return;
     try {
       const res = await volumes.prune();
       alert(`Pruned ${res.data?.VolumesDeleted?.length || 0} volumes`);
@@ -83,29 +83,29 @@ export default function VolumesPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={fetchVolumes}>
-            <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+            <RefreshCw className="size-3.5 mr-1" /> Refresh
           </Button>
-          <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={handlePrune}>
+          <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={handlePrune}>
             Prune Unused
           </Button>
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> New Volume</Button>
+            <DialogTrigger render={<Button size="sm" />}>
+              <Plus className="size-3.5 mr-1" /> New Volume
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Create Volume</DialogTitle></DialogHeader>
               <div className="grid gap-4 py-2">
-                <div className="grid gap-1">
+                <div className="grid gap-1.5">
                   <Label>Name *</Label>
                   <Input placeholder="my-data" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
                 </div>
-                <div className="grid gap-1">
+                <div className="grid gap-1.5">
                   <Label>Driver</Label>
                   <Input placeholder="local" value={form.driver} onChange={(e) => setForm((p) => ({ ...p, driver: e.target.value }))} />
                 </div>
               </div>
               <DialogFooter>
-                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
                 <Button onClick={handleCreate}>Create</Button>
               </DialogFooter>
             </DialogContent>
@@ -116,7 +116,7 @@ export default function VolumesPage() {
       {error && <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
 
       {loading ? (
-        <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+        <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}</div>
       ) : list.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No volumes found</div>
       ) : (
@@ -125,7 +125,7 @@ export default function VolumesPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {["Name", "Driver", "Mountpoint", "Scope", "Actions"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left font-medium text-gray-600">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -135,14 +135,11 @@ export default function VolumesPage() {
                   <td className="px-4 py-3 font-medium text-gray-800">{v.Name}</td>
                   <td className="px-4 py-3"><Badge variant="outline">{v.Driver}</Badge></td>
                   <td className="px-4 py-3 text-gray-500 text-xs font-mono max-w-[260px] truncate">{v.Mountpoint}</td>
-                  <td className="px-4 py-3 text-gray-500">{v.Scope}</td>
+                  <td className="px-4 py-3 text-gray-500 capitalize">{v.Scope}</td>
                   <td className="px-4 py-3">
-                    <Button
-                      size="icon" variant="ghost" className="h-7 w-7 text-red-500"
-                      disabled={actionLoading[v.Name]}
-                      onClick={() => handleRemove(v.Name)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
+                    <Button size="icon-sm" variant="ghost" className="text-red-500"
+                      disabled={busy[v.Name]} onClick={() => handleRemove(v.Name)}>
+                      <Trash2 className="size-3.5" />
                     </Button>
                   </td>
                 </tr>

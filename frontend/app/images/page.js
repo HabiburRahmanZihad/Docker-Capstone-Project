@@ -26,7 +26,7 @@ function formatSize(bytes) {
 export default function ImagesPage() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState({});
+  const [busy, setBusy] = useState({});
   const [pullOpen, setPullOpen] = useState(false);
   const [pullImage, setPullImage] = useState("");
   const [pulling, setPulling] = useState(false);
@@ -47,14 +47,14 @@ export default function ImagesPage() {
   useEffect(() => { fetchImages(); }, [fetchImages]);
 
   async function handleRemove(id) {
-    setActionLoading((p) => ({ ...p, [id]: true }));
+    setBusy((p) => ({ ...p, [id]: true }));
     try {
       await images.remove(id);
       await fetchImages();
     } catch (e) {
       alert(e?.response?.data?.error || e.message);
     } finally {
-      setActionLoading((p) => ({ ...p, [id]: false }));
+      setBusy((p) => ({ ...p, [id]: false }));
     }
   }
 
@@ -82,14 +82,14 @@ export default function ImagesPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={fetchImages}>
-            <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+            <RefreshCw className="size-3.5 mr-1" /> Refresh
           </Button>
           <Dialog open={pullOpen} onOpenChange={setPullOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Pull Image</Button>
+            <DialogTrigger render={<Button size="sm" />}>
+              <Plus className="size-3.5 mr-1" /> Pull Image
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Pull Image</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>Pull Image from Registry</DialogTitle></DialogHeader>
               <div className="grid gap-2 py-2">
                 <Label>Image name</Label>
                 <Input
@@ -100,9 +100,9 @@ export default function ImagesPage() {
                 />
               </div>
               <DialogFooter>
-                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
                 <Button onClick={handlePull} disabled={pulling}>
-                  <Download className="w-4 h-4 mr-1" />
+                  <Download className="size-3.5 mr-1" />
                   {pulling ? "Pulling…" : "Pull"}
                 </Button>
               </DialogFooter>
@@ -114,7 +114,7 @@ export default function ImagesPage() {
       {error && <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
 
       {loading ? (
-        <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+        <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}</div>
       ) : list.length === 0 ? (
         <div className="text-center py-16 text-gray-400">No images found</div>
       ) : (
@@ -123,7 +123,7 @@ export default function ImagesPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {["Repository", "Tag", "Image ID", "Size", "Actions"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left font-medium text-gray-600">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -138,12 +138,9 @@ export default function ImagesPage() {
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{img.Id.replace("sha256:", "").slice(0, 12)}</td>
                     <td className="px-4 py-3 text-gray-600">{formatSize(img.Size)}</td>
                     <td className="px-4 py-3">
-                      <Button
-                        size="icon" variant="ghost" className="h-7 w-7 text-red-500"
-                        disabled={actionLoading[img.Id]}
-                        onClick={() => handleRemove(img.Id)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
+                      <Button size="icon-sm" variant="ghost" className="text-red-500"
+                        disabled={busy[img.Id]} onClick={() => handleRemove(img.Id)}>
+                        <Trash2 className="size-3.5" />
                       </Button>
                     </td>
                   </tr>
